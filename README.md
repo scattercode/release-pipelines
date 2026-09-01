@@ -29,7 +29,7 @@ Two mechanisms, chosen by what each artefact *is* rather than by preference.
 
 ```yaml
 - name: Check out full history
-  uses: actions/checkout@v4
+  uses: actions/checkout@v7
   with:
     fetch-depth: 0          # required: this reads tags and a commit range
 
