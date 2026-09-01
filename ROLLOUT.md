@@ -1,9 +1,28 @@
 # Rollout
 
-**Read this before pushing anything.** The order matters, and getting it wrong
-breaks three repositories' releases rather than none.
+## Where it got to (1 September 2026)
 
-Everything described here is committed locally and **nothing has been pushed**.
+| Step | State |
+|---|---|
+| This repository pushed, public, `v1` + `v1.0.0` tagged | **done** |
+| CI green here, including the job that runs the action | **done** |
+| `tetrak-easyocr-armenian` | **done** — verified end to end: the action computed `bump: none`, the release job correctly did nothing, no tag was cut, and the drift check passed |
+| `tetrak` | **PR #64 open**, per its workflow — `main` takes nothing by direct push |
+| `tetrak-hy-trainer` | **held deliberately — see below** |
+
+**`tetrak-hy-trainer` is not pushed.** Seven commits sit on its local `main`,
+and the `feat:` among them (`per-work held-out registry, and a charset diff
+for new sources`) would cut **0.4.0** and publish it to PyPI, where a version
+number can never be reused. That `feat` belongs to the harvest work, not to
+the review, so the release is that work's call to make. Push when the harvest
+is at a point where 0.4.0 is the right thing to cut.
+
+Nothing else is outstanding.
+
+---
+
+**The rest of this file is the original plan, kept for the one repository that
+has not been done yet.** The order still matters for it.
 
 ## Why the order matters
 
