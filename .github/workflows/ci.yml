@@ -1,0 +1,86 @@
+# Checks on the shared release tooling.
+#
+# This repository is depended on by every repository whose releases are
+# automated, so a fault here is a fault everywhere at once — which is the
+# trade made by sharing it. The tests are the mitigation, and they are the
+# reason the version logic was worth extracting rather than copied a fourth
+# time.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Version computation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: python -m pip install --quiet pytest
+
+      # The suite builds real repositories with real merge topologies, because
+      # the failure it exists to prevent was topological: an approach that
+      # looked right on a linear history skipped a major release on a branch
+      # that had been cut before one tag and merged after another.
+      - name: Test
+        run: pytest tests -q
+
+      # The action must keep working on the interpreter a runner actually has,
+      # with nothing installed. It is standard library only for that reason.
+      - name: The script runs with no dependencies
+        run: |
+          python3 actions/next-version/next_version.py --explain
+          echo "exit=$?"
+
+  action:
+    name: The action resolves
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Uses the action from this checkout rather than by tag, so a change to
+      # action.yml is exercised by its own pull request rather than only after
+      # it is tagged and a consumer breaks.
+      - id: version
+        uses: ./actions/next-version
+
+      - name: Report what it computed
+        run: |
+          echo "release=${{ steps.version.outputs.release }}"
+          echo "next=${{ steps.version.outputs.next }}"
+          echo "bump=${{ steps.version.outputs.bump }}"
+          # The outputs must exist even when there is nothing to release,
+          # because every consumer branches on `release`.
+          if [ -z "${{ steps.version.outputs.release }}" ]; then
+            echo "::error::the action produced no release output"
+            exit 1
+          fi
+
+  templates:
+    name: Templates and sync script
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: sync.sh syntax
+        run: bash -n sync.sh
+
+      # A template that is not valid on its own terms would be copied into
+      # thirteen repositories before anyone found out.
+      - name: commit-msg hook is valid shell
+        run: bash -n templates/commit-msg
+
+      - name: cliff.toml parses
+        run: python3 -c "import tomllib;tomllib.load(open('templates/cliff.toml','rb'))"

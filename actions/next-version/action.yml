@@ -1,0 +1,58 @@
+# Compute the next semantic version from the Conventional Commit history.
+#
+# Shared by every repository whose releases are automated, because this logic
+# was byte-identical in three of them and one more was still running the
+# approach it replaces.
+#
+# Deliberately not `git cliff --bumped-version`: that answers the question by
+# bucketing the whole history into releases first, and the bucketing goes wrong
+# on merge topology. On 2026-08-22 a branch cut before 4.3.0 and merged after
+# 4.4.1 had all six of its commits -- including a `feat!` with a BREAKING
+# CHANGE footer -- filed under release 4.3.0, whose tag is not even an ancestor
+# of them. With nothing left unreleased, git-cliff reported "nothing to bump"
+# and 5.0.0 was silently skipped while the workflow went green.
+#
+# The version only ever depended on one commit range. Reading that range
+# directly is deterministic, independent of topology, and testable.
+#
+# The caller MUST check out with `fetch-depth: 0`. This reads tags and the
+# commit range since the last one; a shallow clone has neither, and the failure
+# is a wrong answer rather than an error.
+name: Compute the next version
+description: >
+  Read the Conventional Commit history since the last tag and compute the next
+  semantic version, or report that there is nothing to release.
+
+inputs:
+  explain:
+    description: >
+      Print the decision to the log -- the commit range, each commit that
+      counted and why, and the resulting bump. Worth leaving on: when a
+      release does not happen, this is the only record of why not.
+    required: false
+    default: "true"
+
+outputs:
+  next:
+    description: >
+      The next version, carrying the same `v` prefix as the previous tag.
+      Empty when there is nothing to release.
+    value: ${{ steps.compute.outputs.next }}
+  release:
+    description: '"true" when a release should be cut, otherwise "false".'
+    value: ${{ steps.compute.outputs.release }}
+  bump:
+    description: '"major", "minor", "patch", or empty.'
+    value: ${{ steps.compute.outputs.bump }}
+
+runs:
+  using: composite
+  steps:
+    # Standard library only, so this needs no setup-python step and no install.
+    # The runner's python3 is enough, which is what keeps this action a single
+    # cheap step in every consuming workflow.
+    - id: compute
+      shell: bash
+      run: |
+        python3 "${{ github.action_path }}/next_version.py" --github \
+          ${{ inputs.explain == 'true' && '--explain' || '' }}
