@@ -104,6 +104,34 @@ Two things it will not do quietly:
   made it impossible — one appearing means the hook was bypassed, and a
   release-worthy change may be invisible.
 
+## Who uses what
+
+| Repository | next-version action | Templates checked |
+|---|---|---|
+| `tetrak` | yes | yes |
+| `tetrak-hy-trainer` | yes | yes |
+| `tetrak-easyocr-armenian` | yes | yes |
+| `scatterskills` | **no — see below** | yes |
+| the other nine | not applicable (no automated release) | available |
+
+**scatterskills deliberately has not adopted the action**, and this is the one
+place a policy genuinely differs rather than merely having been copied.
+
+Its documented policy makes a documentation or tooling commit a **patch
+release**, on the grounds that people install individual skills and any
+change to the guidance is worth a version. The action treats `docs`, `chore`,
+`style`, `test`, `ci`, `build` and `refactor` as **no release at all**.
+
+Adopting the action there would therefore stop cutting releases it currently
+cuts. That is a decision about that library's versioning, not a mechanical
+migration, so it has been left alone — and written down here so the difference
+is visible rather than discovered.
+
+It does still run `git cliff --bumped-version`, which is what this action
+replaced. If it adopts the action, it gains the topology fix; if it does not,
+it keeps the exposure. Either is defensible; drifting into one by accident is
+not.
+
 ## Adopting it in a repository
 
 1. Add the `--check` step to CI and run `./sync.sh --check ../<repo>` locally.
